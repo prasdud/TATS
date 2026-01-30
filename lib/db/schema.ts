@@ -3,7 +3,6 @@ import {
   serial,
   text,
   timestamp,
-  bytea,
   pgEnum,
 } from 'drizzle-orm/pg-core';
 
@@ -45,7 +44,7 @@ export const candidates = pgTable('candidates', {
     .references(() => jobs.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   email: text('email').notNull(),
-  resumeFile: bytea('resume_file'),
+  resumeFile: text('resume_file'), // Base64 encoded PDF
   resumeText: text('resume_text'),
   githubUrl: text('github_url').notNull(),
   screeningStatus: screeningStatusEnum('screening_status'),
