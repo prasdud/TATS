@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:verify": "tsx scripts/verify-db.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
