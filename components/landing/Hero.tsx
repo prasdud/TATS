@@ -1,9 +1,23 @@
+"use client";
+
+import { GrapheneModel } from "./GrapheneModel";
 import Link from "next/link";
 import { ArrowRight, CheckCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+
+
 
 export function Hero() {
+    const [scrollY, setScrollY] = useState(0);
+
+    useEffect(() => {
+        const handleScroll = () => setScrollY(window.scrollY);
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
     return (
-        <section className="relative overflow-hidden pt-24 pb-32 md:pb-48">
+        <section className="relative overflow-hidden pt-16 pb-32 md:pb-48">
             {/* Background Gradient Mesh */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
                 <div className="absolute -top-10 right-0 w-[800px] h-[800px] bg-md-secondary-container/30 rounded-full blur-3xl mix-blend-multiply opacity-70" />
@@ -11,10 +25,10 @@ export function Hero() {
             </div>
 
             <div className="container mx-auto px-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
 
                     {/* Left Content */}
-                    <div className="flex flex-col items-start text-left">
+                    <div className="flex flex-col items-start text-left -mt-12">
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-md-secondary-container text-md-on-secondary-container text-sm font-medium mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-md-primary opacity-75"></span>
@@ -24,13 +38,13 @@ export function Hero() {
                         </div>
 
                         <h1 className="text-display-large font-bold text-md-on-surface mb-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-                            Transform the <br />
-                            way your team <br />
-                            <span className="text-md-primary">works</span>
+                            Intelligent Triage <br />
+                            for Technical <br />
+                            <span className="text-md-primary">Assessments</span>
                         </h1>
 
                         <p className="text-headline-medium text-md-on-surface-variant mb-12 max-w-lg animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-                            Technical Assessment Triage System brings your hiring team together with powerful tools designed to streamline workflows.
+                            Empower non-technical HR managers to accurately assess technical talent. Hire the right engineers without needing to be an expert in code.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 w-full sm:w-auto">
@@ -50,18 +64,14 @@ export function Hero() {
                         </div>
 
                         <div className="mt-12 text-sm font-medium text-md-on-surface-variant opacity-80">
-                            Join 50,000+ teams already using Triage System
+                            Join 50,000+ teams already using TATS
                         </div>
                     </div>
 
                     {/* Right Visual (Abstract Representation) */}
-                    <div className="relative hidden lg:block h-[600px] w-full animate-in fade-in zoom-in duration-1000 delay-300">
-                        {/* Sharper, less blurry shapes */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-md-primary rounded-[40px] rotate-12 opacity-80 mix-blend-multiply" />
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/3 -translate-y-1/3 w-[450px] h-[450px] bg-md-tertiary rounded-[60px] -rotate-6 opacity-80 mix-blend-multiply" />
-                        <div className="absolute top-1/2 left-1/2 -translate-x-2/3 -translate-y-2/3 w-[400px] h-[400px] bg-md-secondary-container rounded-full opacity-90 mix-blend-multiply" />
-
-                        {/* Removed the glassmorphism card overlay as requested */}
+                    {/* Right Visual (Abstract Representation) */}
+                    <div className="relative hidden lg:block h-[600px] w-full mt-12 animate-in fade-in zoom-in duration-1000 delay-300">
+                        <GrapheneModel className="w-full h-full" />
                     </div>
 
                 </div>
