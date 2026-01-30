@@ -1,0 +1,23 @@
+
+> triage-system@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 4.7s
+  Running TypeScript ...
+Failed to compile.
+
+./scripts/migrate.ts:13:11
+Type error: Property 'schema' does not exist on type 'typeof import("/home/prasdud/playground/TATS/lib/db/schema")'.
+
+[0m [90m 11 |[39m [36masync[39m [36mfunction[39m main() {
+ [90m 12 |[39m   [36mconst[39m { drizzle } [33m=[39m [36mawait[39m [36mimport[39m([32m'drizzle-orm/neon-http'[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 13 |[39m   [36mconst[39m { schema } [33m=[39m [36mawait[39m [36mimport[39m([32m'../lib/db/schema'[39m)[33m;[39m
+ [90m    |[39m           [31m[1m^[22m[39m
+ [90m 14 |[39m
+ [90m 15 |[39m   [36mconst[39m db [33m=[39m drizzle({ client[33m:[39m sql[33m,[39m schema })[33m;[39m
+ [90m 16 |[39m[0m
+Next.js build worker exited with code: 1 and signal: null

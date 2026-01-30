@@ -1,14 +1,13 @@
+import { Hero } from "@/components/landing/Hero";
+import { Features } from "@/components/landing/Features";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="text-center">
-        <h1 className="text-3xl font-semibold text-black dark:text-zinc-50">
-          Assignment Submission Triage System
-        </h1>
-        <p className="mt-4 text-zinc-600 dark:text-zinc-400">
-          Deployment test successful
-        </p>
-      </main>
-    </div>
+    <>
+      <Hero />
+      <Features />
+      <HowItWorks />
+    </>
   );
 }

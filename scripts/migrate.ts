@@ -10,7 +10,7 @@ const sql = neon(process.env.DATABASE_URL);
 
 async function main() {
   const { drizzle } = await import('drizzle-orm/neon-http');
-  const { schema } = await import('../lib/db/schema');
+  const schema = await import('../lib/db/schema');
 
   const db = drizzle({ client: sql, schema });
 
