@@ -24,10 +24,15 @@ async function verify() {
   console.log('Tables found:', tables.map((t: any) => t.table_name));
 
   // Count rows in each table
-  for (const table of tables) {
-    const count = await sql`SELECT COUNT(*) as count FROM ${sql(table.table_name)}`;
-    console.log(`  ${table.table_name}: ${count[0].count} rows`);
-  }
+  const usersCount = await sql`SELECT COUNT(*) as count FROM users`;
+  const jobsCount = await sql`SELECT COUNT(*) as count FROM jobs`;
+  const candidatesCount = await sql`SELECT COUNT(*) as count FROM candidates`;
+  const evaluationsCount = await sql`SELECT COUNT(*) as count FROM evaluations`;
+
+  console.log('  users:', usersCount[0].count, 'rows');
+  console.log('  jobs:', jobsCount[0].count, 'rows');
+  console.log('  candidates:', candidatesCount[0].count, 'rows');
+  console.log('  evaluations:', evaluationsCount[0].count, 'rows');
 
   console.log('Database connection verified!');
   process.exit(0);
