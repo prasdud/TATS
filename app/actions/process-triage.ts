@@ -76,7 +76,7 @@ export async function processTriageQueue(jobId: number) {
             processedCount++;
         }
 
-        revalidateTag('triage-data');
+        // revalidateTag('triage-data');
         revalidatePath('/dashboard/triage');
         return { success: true, count: processedCount };
 
