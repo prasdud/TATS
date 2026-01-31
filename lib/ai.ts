@@ -92,7 +92,16 @@ ${JSON.stringify(repoMetadata.recentCommits.map(c => ({
         const text = response.text;
 
         // clean up potential markdown formatting
-        const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        // clean up potential markdown formatting and find the JSON object
+        let jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        // Robust Extraction: Find first '{' and last '}'
+        const firstBrace = jsonStr.indexOf('{');
+        const lastBrace = jsonStr.lastIndexOf('}');
+
+        if (firstBrace !== -1 && lastBrace !== -1) {
+            jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
+        }
 
         const result = JSON.parse(jsonStr);
 

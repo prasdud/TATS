@@ -56,6 +56,8 @@ export async function fetchRepoMetadata(githubUrl: string): Promise<RepoMetadata
 
         if (process.env.GITHUB_TOKEN) {
             headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
+        } else {
+            console.warn("⚠️ No GITHUB_TOKEN found. Rate limit is restricted to 60 requests/hour.");
         }
 
         const baseUrl = `https://api.github.com/repos/${owner}/${repo}`;

@@ -3,6 +3,7 @@ import { CheckCircle2, AlertCircle, XCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { JobSelector } from './_components/JobSelector';
 import { CandidateCard } from './_components/CandidateCard';
+import { TriageProcessor } from './_components/TriageProcessor';
 
 interface PageProps {
     searchParams: Promise<{ jobId?: string }>;
@@ -116,6 +117,9 @@ export default async function TriagePage({ searchParams }: PageProps) {
                     {pending.length === 0 && <EmptyState />}
                 </div>
             </div>
+
+            {/* Client-side Auto-Processor */}
+            <TriageProcessor jobId={job.id} initialPendingCount={pending.length} />
         </div>
     );
 }

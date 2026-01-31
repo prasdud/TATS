@@ -123,37 +123,12 @@ export function AddCandidatesForm({ job, onComplete }: AddCandidatesFormProps) {
             const result = await addCandidates(job.id, candidatesToUpload);
 
             if (result.success) {
-                // 2. Start AI Triage Process (Recursive)
-                setStatus("parsing");
-
-                const processLoop = async () => {
-                    let keepProcessing = true;
-                    while (keepProcessing) {
-                        const response = await processTriageQueue(job.id);
-
-                        if (response.error) {
-                            setError(response.error);
-                            keepProcessing = false;
-                            setStatus("error");
-                            return;
-                        }
-
-                        // If we have remaining candidates, loop again
-                        if (response.remaining && response.remaining > 0) {
-                            // Update UI if possible, or just log
-                            console.log(`Still processing... ${response.remaining} remaining.`);
-                            // Optional: Add a specialized status for "Processing X..." if we had a state for it
-                            setStatus("parsing");
-                        } else {
-                            keepProcessing = false;
-                        }
-                    }
-                };
-
-                await processLoop();
-
                 setStatus("success");
-                setTimeout(onComplete, 1000);
+                // Redirect to Triage Page where the processor will pick it up
+                // We add a small timeout for the user to see "Success"
+                setTimeout(() => {
+                    router.push(`/dashboard/triage?jobId=${job.id}`);
+                }, 1000);
             } else {
                 setError(result.error || "Failed to upload candidates.");
                 setStatus("error");

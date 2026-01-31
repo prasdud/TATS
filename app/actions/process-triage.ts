@@ -28,7 +28,7 @@ export async function processTriageQueue(jobId: number) {
                     isNull(candidates.screeningStatus)
                 )
             )
-            .limit(5);
+            .limit(1);
 
         if (pendingCandidates.length === 0) {
             return { message: "No pending candidates to triage." };
@@ -39,6 +39,23 @@ export async function processTriageQueue(jobId: number) {
 
         for (const candidate of pendingCandidates) {
             console.log(`Processing candidate: ${candidate.name} (${candidate.githubUrl})`);
+
+            // 0. Rate Limit Safety (Cohere Trial = 20/min => 1 req / 3s)
+            // We wait 4s to be safe.
+            await new Promise(r => setTimeout(r, 4000));
+
+            // 0.5 Double Check (Concurrency Protection)
+            // Ensure this candidate wasn't processed by another thread in the last few seconds
+            const freshCandidate = await db.select()
+                .from(candidates)
+                .where(eq(candidates.id, candidate.id))
+                .limit(1);
+
+            if (freshCandidate.length > 0 && freshCandidate[0].screeningStatus) {
+                console.log(`Skipping ${candidate.name} - Already processed.`);
+                processedCount++; // Still count as processed to avoid clearing "remaining" incorrectly
+                continue;
+            }
 
             // A. Fetch GitHub Metadata
             const repoData = await fetchRepoMetadata(candidate.githubUrl);
