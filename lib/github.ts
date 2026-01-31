@@ -20,6 +20,24 @@ export interface RepoMetadata {
     };
 }
 
+const fetchWithRetry = async (url: string, options: RequestInit, retries = 3, backoff = 1000): Promise<Response> => {
+    try {
+        const res = await fetch(url, options);
+        if (res.status === 429 && retries > 0) {
+            console.warn(`Rate limit hit for ${url}. Retrying in ${backoff}ms...`);
+            await new Promise(r => setTimeout(r, backoff));
+            return fetchWithRetry(url, options, retries - 1, backoff * 2);
+        }
+        return res;
+    } catch (e) {
+        if (retries > 0) {
+            await new Promise(r => setTimeout(r, backoff));
+            return fetchWithRetry(url, options, retries - 1, backoff * 2);
+        }
+        throw e;
+    }
+};
+
 export async function fetchRepoMetadata(githubUrl: string): Promise<RepoMetadata | null> {
     try {
         const urlParts = githubUrl.split('github.com/');
@@ -44,13 +62,31 @@ export async function fetchRepoMetadata(githubUrl: string): Promise<RepoMetadata
         const userUrl = `https://api.github.com/users/${owner}`;
         const eventsUrl = `https://api.github.com/users/${owner}/events/public?per_page=100`; // Fetch max allowed per page
 
-        // Parallel Fetch: Repo Info, Readme, Commits, User Profile, User Events
+        const fetchWithRetry = async (url: string, options: RequestInit, retries = 3, backoff = 1000): Promise<Response> => {
+            try {
+                const res = await fetch(url, options);
+                if (res.status === 429 && retries > 0) {
+                    console.warn(`Rate limit hit for ${url}. Retrying in ${backoff}ms...`);
+                    await new Promise(r => setTimeout(r, backoff));
+                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                }
+                return res;
+            } catch (e) {
+                if (retries > 0) {
+                    await new Promise(r => setTimeout(r, backoff));
+                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                }
+                throw e;
+            }
+        };
+
+        // ... inside fetchRepoMetadata
         const [infoRes, readmeRes, commitsRes, userRes, eventsRes] = await Promise.all([
-            fetch(baseUrl, { headers }),
-            fetch(`${baseUrl}/readme`, { headers }),
-            fetch(`${baseUrl}/commits?per_page=20`, { headers }), // Increased to 20 for better history sample
-            fetch(userUrl, { headers }),
-            fetch(eventsUrl, { headers })
+            fetchWithRetry(baseUrl, { headers }),
+            fetchWithRetry(`${baseUrl}/readme`, { headers }),
+            fetchWithRetry(`${baseUrl}/commits?per_page=20`, { headers }),
+            fetchWithRetry(userUrl, { headers }),
+            fetchWithRetry(eventsUrl, { headers })
         ]);
 
         if (!infoRes.ok) throw new Error(`Failed to fetch repo info: ${infoRes.statusText}`);
