@@ -1,7 +1,8 @@
 import { getTriageData, getTriageJobs } from '@/app/actions/triage';
-import { Loader2, CheckCircle2, AlertCircle, XCircle, Clock } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { JobSelector } from './_components/JobSelector';
+import { CandidateCard } from './_components/CandidateCard';
 
 interface PageProps {
     searchParams: Promise<{ jobId?: string }>;
@@ -115,27 +116,6 @@ export default async function TriagePage({ searchParams }: PageProps) {
                     {pending.length === 0 && <EmptyState />}
                 </div>
             </div>
-        </div>
-    );
-}
-
-function CandidateCard({ candidate, isPending }: { candidate: any, isPending?: boolean }) {
-    return (
-        <div className={`
-            p-4 rounded-xl border bg-md-surface shadow-sm transition-all hover:shadow-md
-            ${isPending ? 'border-dashed border-md-outline/30 opacity-70' : 'border-md-outline/10'}
-        `}>
-            <div className="flex justify-between items-start mb-2">
-                <h4 className="font-bold text-md-on-surface truncate pr-2">{candidate.name}</h4>
-                <a href={candidate.githubUrl} target="_blank" rel="noreferrer" className="text-xs text-md-primary hover:underline">GitHub</a>
-            </div>
-            <p className="text-xs text-md-on-surface-variant truncate mb-2">{candidate.email}</p>
-            {isPending && (
-                <div className="flex items-center gap-1.5 text-xs text-md-on-surface-variant mt-2">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Waiting for analysis...
-                </div>
-            )}
         </div>
     );
 }

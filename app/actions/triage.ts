@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
-import { jobs, candidates } from '@/lib/db/schema';
+import { jobs, candidates, evaluations } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 export async function getTriageJobs() {
@@ -51,10 +51,17 @@ export async function getTriageData(jobId?: number) {
         // Verify ownership (if specific jobId was requested, make sure it belongs to user)
         if (job.createdBy !== parseInt(session.user.id)) return null;
 
-        // Get candidates for this job
-        const jobCandidates = await db.select()
+        // Get candidates with evaluation data
+        const rows = await db.select()
             .from(candidates)
+            .leftJoin(evaluations, eq(evaluations.candidateId, candidates.id))
             .where(eq(candidates.jobId, job.id));
+
+        const jobCandidates = rows.map(row => ({
+            ...row.candidates,
+            aiExplanation: row.evaluations?.aiExplanation || null,
+            signals: row.evaluations?.signals || null,
+        }));
 
         return { job, candidates: jobCandidates };
     } catch (error) {
