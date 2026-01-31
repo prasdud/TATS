@@ -1,0 +1,47 @@
+Job Title: Full-Stack Developer
+Company: House of EdTech
+Role Overview
+As a Full-Stack Developer at House of EdTech, you will play a key role in the development and
+optimization of our platforms. From designing seamless user experiences to building efficient
+backend systems, your expertise will help ensure our technology remains cutting-edge,
+scalable, and impactful.
+Technologies You’ll Work With:
+● Frontend: Next.js (App Router, must), React.js
+● Backend: Bun.sh, Node.js, Eylsia.js, Hono.js
+● Database & ORM Tools: Postgres, MongoDB, Redis, Prisma, Drizzle
+● Cloud & DevOps: Vercel, Railway, AWS, Cloudflare
+Key Responsibilities:
+● Develop and maintain scalable, high-performance full-stack applications.
+● Work fluidly across frontend and backend systems to deliver exceptional user
+experiences.
+● Collaborate with cross-functional teams to conceptualize, implement, and optimize new
+features.
+● Troubleshoot and solve complex technical issues while enhancing platform performance
+and reliability.
+● Stay up-to-date with emerging technologies and industry best practices.
+Who You Are:
+● Experience: 1+ years of hands-on expertise in full-stack development.
+● Technical Skills: Proficiency in Node.js, Next.js, and Bun, with a strong understanding of
+Prisma ORM and database management (PostgreSQL, MongoDB).
+● Mindset: A team player with a problem-solving attitude, passion for innovation, and
+eagerness to learn and adopt emerging technologies.
+● Why Join Us?
+● Impact: Your work will shape the future of digital education for millions of learners.
+● Innovative Environment: Join a remote-first, forward-thinking team that values creativity,
+collaboration, and innovation.
+
+● Career Growth: Work on exciting, high-impact projects that influence the digital
+education landscape.
+About Us:
+House of EdTech (Goenka Kachave LLP), founded by IIT Kharagpur alumni Aditya Goenka and
+Aditya Kachave, is one of India’s fastest-growing edtech companies, redefining professional
+growth with innovative, impactful, and hands-on learning experiences. With 5M+ professionals
+served, ₹250 Cr+ ARR, and 700+ team members across 10+ offices in India, we empower
+learners to thrive through advanced education in AI tools, Stock Market, Personal Finance, Data
+Science, and Business Productivity. Now, we are expanding into AI-powered trading and
+quantitative research — building cutting edge strategies and technology to revolutionize
+financial decision-making.
+If you’re ready to make a meaningful impact in an exciting and intellectually stimulating
+environment, we’d love to hear from you!
+Apply now and become part of our mission to transform education with technology. Let’s build
+the future together!

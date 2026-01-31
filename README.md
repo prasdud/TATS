@@ -8,7 +8,7 @@ A full-stack Next.js 16 application that helps non-technical HR teams triage tec
 
 ## Usage
 
-Visit the deployed application and create an account. Download the CSV files from the project root (test-candidates-small.csv for quick testing, test-candidates-large.csv for more comprehensive testing). Create a job posting, then upload the CSV to import candidates. The system will analyze each GitHub repository and provide a triage recommendation.
+Visit the deployed application and create an account. Download the CSV files from the project root (test-candidates-small.csv for quick testing, test-candidates-large.csv for more comprehensive testing). Create a job posting with the sample job description in project root test-sample-jd.txt, then upload the CSV to import candidates. The system will analyze each GitHub repository and provide a triage recommendation.
 
 ## About
 
