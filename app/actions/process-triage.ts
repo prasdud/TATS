@@ -3,7 +3,7 @@
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { jobs, candidates, evaluations } from '@/lib/db/schema';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, count } from 'drizzle-orm';
 import { fetchRepoMetadata } from '@/lib/github';
 import { analyzeCandidate } from '@/lib/ai';
 import { revalidatePath, revalidateTag } from 'next/cache';
@@ -76,9 +76,20 @@ export async function processTriageQueue(jobId: number) {
             processedCount++;
         }
 
+        // Check remaining
+        const remainingResult = await db.select({ value: count() })
+            .from(candidates)
+            .where(
+                and(
+                    eq(candidates.jobId, jobId),
+                    isNull(candidates.screeningStatus)
+                )
+            );
+        const remaining = remainingResult[0].value;
+
         // revalidateTag('triage-data');
         revalidatePath('/dashboard/triage');
-        return { success: true, count: processedCount };
+        return { success: true, count: processedCount, remaining };
 
     } catch (error) {
         console.error("Triage Processing Failed:", error);

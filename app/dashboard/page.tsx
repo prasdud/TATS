@@ -1,8 +1,50 @@
 import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { jobs, candidates } from "@/lib/db/schema";
+import { eq, and, isNull, isNotNull, count } from "drizzle-orm";
+
 
 export default async function DashboardPage() {
     const session = await auth();
     const userName = session?.user?.name || "User";
+    const userId = session?.user?.id ? parseInt(session.user.id) : 0;
+
+    // Fetch Stats
+    let pendingReviews = 0;
+    let activeJobs = 0;
+    let candidatesTriaged = 0;
+
+    if (userId) {
+        // 1. Active Jobs
+        const jobsResult = await db.select({ value: count() })
+            .from(jobs)
+            .where(eq(jobs.createdBy, userId));
+        activeJobs = jobsResult[0].value;
+
+        // 2. Pending Reviews
+        const pendingResult = await db.select({ value: count() })
+            .from(candidates)
+            .innerJoin(jobs, eq(candidates.jobId, jobs.id))
+            .where(
+                and(
+                    eq(jobs.createdBy, userId),
+                    isNull(candidates.screeningStatus)
+                )
+            );
+        pendingReviews = pendingResult[0].value;
+
+        // 3. Candidates Triaged
+        const triagedResult = await db.select({ value: count() })
+            .from(candidates)
+            .innerJoin(jobs, eq(candidates.jobId, jobs.id))
+            .where(
+                and(
+                    eq(jobs.createdBy, userId),
+                    isNotNull(candidates.screeningStatus)
+                )
+            );
+        candidatesTriaged = triagedResult[0].value;
+    }
 
     return (
         <div className="space-y-8">
@@ -18,15 +60,15 @@ export default async function DashboardPage() {
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="p-6 rounded-[24px] bg-md-surface-container hover:bg-md-surface-container-high transition-colors">
-                    <div className="text-md-primary font-bold text-display-medium mb-1">0</div>
+                    <div className="text-md-primary font-bold text-display-medium mb-1">{pendingReviews}</div>
                     <div className="text-md-on-surface-variant text-label-large">Pending Reviews</div>
                 </div>
                 <div className="p-6 rounded-[24px] bg-md-surface-container hover:bg-md-surface-container-high transition-colors">
-                    <div className="text-md-secondary font-bold text-display-medium mb-1">0</div>
+                    <div className="text-md-secondary font-bold text-display-medium mb-1">{activeJobs}</div>
                     <div className="text-md-on-surface-variant text-label-large">Active Jobs</div>
                 </div>
                 <div className="p-6 rounded-[24px] bg-md-surface-container hover:bg-md-surface-container-high transition-colors">
-                    <div className="text-md-tertiary font-bold text-display-medium mb-1">0</div>
+                    <div className="text-md-tertiary font-bold text-display-medium mb-1">{candidatesTriaged}</div>
                     <div className="text-md-on-surface-variant text-label-large">Candidates Triaged</div>
                 </div>
             </div>
