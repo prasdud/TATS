@@ -1,43 +1,10 @@
+'use server';
+
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { jobs, candidates, evaluations } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { unstable_cache } from 'next/cache';
-
-// Cached raw data fetcher
-const getCachedJobAndCandidates = unstable_cache(
-    async (userId: number, jobId?: number) => {
-        let job;
-
-        if (jobId) {
-            const result = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
-            if (result.length > 0) job = result[0];
-        }
-
-        if (!job) {
-            // Default to latest
-            const latestJob = await db.select()
-                .from(jobs)
-                .where(eq(jobs.createdBy, userId))
-                .orderBy(desc(jobs.createdAt))
-                .limit(1);
-            if (latestJob.length > 0) job = latestJob[0];
-        }
-
-        if (!job) return null;
-        if (job.createdBy !== userId) return null;
-
-        // Get candidates with evaluation data
-        const rows = await db.select()
-            .from(candidates)
-            .leftJoin(evaluations, eq(evaluations.candidateId, candidates.id))
-            .where(eq(candidates.jobId, job.id));
-
-        return { job, rows };
-    },
-    ['triage-data'], // Base tag
-    { tags: ['triage-data'] }
-);
+// Removed unstable_cache for guaranteed live updates
 
 export async function getTriageJobs() {
     const session = await auth();
@@ -64,11 +31,31 @@ export async function getTriageData(jobId?: number) {
     const userId = parseInt(session.user.id);
 
     try {
-        // Use cached fetcher
-        const data = await getCachedJobAndCandidates(userId, jobId);
+        let job;
 
-        if (!data) return null;
-        const { job, rows } = data;
+        if (jobId) {
+            const result = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
+            if (result.length > 0) job = result[0];
+        }
+
+        if (!job) {
+            // Default to latest
+            const latestJob = await db.select()
+                .from(jobs)
+                .where(eq(jobs.createdBy, userId))
+                .orderBy(desc(jobs.createdAt))
+                .limit(1);
+            if (latestJob.length > 0) job = latestJob[0];
+        }
+
+        if (!job) return null;
+        if (job.createdBy !== userId) return null;
+
+        // Get candidates with evaluation data - DIRECT DB FETCH (No Cache)
+        const rows = await db.select()
+            .from(candidates)
+            .leftJoin(evaluations, eq(evaluations.candidateId, candidates.id))
+            .where(eq(candidates.jobId, job.id));
 
         const jobCandidates = rows.map(row => ({
             ...row.candidates,

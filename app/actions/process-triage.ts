@@ -102,7 +102,7 @@ export async function processTriageQueue(jobId: number) {
             );
         const remaining = remainingResult[0].value;
 
-        // revalidateTag('triage-data');
+        // revalidateTag('triage-data'); // Not needed, cache removed
         revalidatePath('/dashboard/triage');
         return { success: true, count: 1, remaining };
 
