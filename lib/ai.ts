@@ -39,7 +39,8 @@ Read the Commit Log *before* you look at the README or the Job Description match
 1.  **CHECK FOR "LOW EFFORT" (VIBECODING)**:
     *   **The "Mass Upload" Rule**: If the repo has fewer than 5 commits TOTAL, mark as **low_effort** IMMEDIATELY.
     *   **The "Throwaway Account" Rule**: If the candidate has **Zero or Low (<10) Global Activity** AND the repo is small/generic, mark as **low_effort**.
-    *   **The "Clone" Rule**: If the commit author does not match the candidate (except for initial scaffolding), mark as **low_effort**.
+    *   **The "Clone" Rule**: Compare **Commit Author** vs **Repository Owner**. If they do NOT match, it IS a clone/low_effort.
+        *   *CRITICAL*: Ignore the "Candidate Name". If **Commit Author** == **Repository Owner**, it is VALID, even if the name is different (e.g., Handle "prasdud" vs Name "Muhammad").
 
 2.  **CHECK FOR "LOOKS FINE" (GOOD MANNERS)**:
     *   **Granularity**: The candidate has a healthy number of commits (e.g., 10+).
@@ -59,11 +60,12 @@ Read the Commit Log *before* you look at the README or the Job Description match
 `;
 
     const userMessage = `
-Candidate: ${candidateName}
+Candidate Name: ${candidateName}
 Job Description Snippet:
 ${jobDescription.slice(0, 1500)}
 
 Repository Data:
+- Repository Owner: ${repoMetadata.owner} (Use this to verify authership)
 - Owner Stats: Created ${repoMetadata.ownerStats.accountCreated}, ${repoMetadata.ownerStats.publicRepos} public repos, ${repoMetadata.ownerStats.followers} followers.
 - Global Activity: ${repoMetadata.ownerStats.recentActivity >= 100 ? "100+" : repoMetadata.ownerStats.recentActivity} events in the last ~90 days.
 - Repo Description: ${repoMetadata.description}
