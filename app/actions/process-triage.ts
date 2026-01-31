@@ -18,9 +18,9 @@ export async function processTriageQueue(jobId: number) {
         if (jobResult.length === 0) return { error: "Job not found" };
         const job = jobResult[0];
 
-        // 2. Fetch Pending Candidates (Where screeningStatus is NULL)
-        // Limit to 5 at a time for this simplified version to avoid timeout
-        const pendingCandidates = await db.select()
+        // 2. ATOMIC CLAIM: Try to lock one candidate
+        // First, find a candidate ID to target
+        const candidateToLockResult = await db.select({ id: candidates.id })
             .from(candidates)
             .where(
                 and(
@@ -30,57 +30,57 @@ export async function processTriageQueue(jobId: number) {
             )
             .limit(1);
 
-        if (pendingCandidates.length === 0) {
-            return { message: "No pending candidates to triage." };
+        if (candidateToLockResult.length === 0) {
+            return { message: "No pending candidates to triage.", count: 0, remaining: 0 };
         }
 
-        // 3. Process each candidate
-        let processedCount = 0;
+        const targetId = candidateToLockResult[0].id;
 
-        for (const candidate of pendingCandidates) {
-            console.log(`Processing candidate: ${candidate.name} (${candidate.githubUrl})`);
+        // Try to "claim" this candidate by setting status to 'needs_review' (temporary lock)
+        // This ensures only ONE thread gets this specific candidate.
+        const claimedCandidates = await db.update(candidates)
+            .set({ screeningStatus: 'needs_review' })
+            .where(
+                and(
+                    eq(candidates.id, targetId),
+                    isNull(candidates.screeningStatus) // Crucial concurrent check
+                )
+            )
+            .returning();
 
-            // 0. Rate Limit Safety (Cohere Trial = 20/min => 1 req / 3s)
-            // We wait 4s to be safe.
-            await new Promise(r => setTimeout(r, 4000));
-
-            // 0.5 Double Check (Concurrency Protection)
-            // Ensure this candidate wasn't processed by another thread in the last few seconds
-            const freshCandidate = await db.select()
+        // If we failed to claim (another thread won this specific ID), return
+        if (claimedCandidates.length === 0) {
+            // Check remaining count for UI correctness
+            const remainingCheck = await db.select({ value: count() })
                 .from(candidates)
-                .where(eq(candidates.id, candidate.id))
-                .limit(1);
+                .where(and(eq(candidates.jobId, jobId), isNull(candidates.screeningStatus)));
+            return { success: true, count: 0, remaining: remainingCheck[0].value };
+        }
 
-            if (freshCandidate.length > 0 && freshCandidate[0].screeningStatus) {
-                console.log(`Skipping ${candidate.name} - Already processed.`);
-                processedCount++; // Still count as processed to avoid clearing "remaining" incorrectly
-                continue;
-            }
+        const candidate = claimedCandidates[0];
+        console.log(`Processing candidate (Claimed): ${candidate.name} (${candidate.githubUrl})`);
 
-            // A. Fetch GitHub Metadata
-            const repoData = await fetchRepoMetadata(candidate.githubUrl);
+        // 0. Rate Limit Safety (Cohere Trial = 20/min)
+        await new Promise(r => setTimeout(r, 4000));
 
-            if (!repoData) {
-                // If invalid repo, mark as Needs Review
-                await db.update(candidates)
-                    .set({ screeningStatus: 'needs_review' })
-                    .where(eq(candidates.id, candidate.id));
+        // A. Fetch GitHub Metadata
+        const repoData = await fetchRepoMetadata(candidate.githubUrl);
 
-                // Create dummy evaluation
-                await db.insert(evaluations).values({
-                    candidateId: candidate.id,
-                    signals: JSON.stringify(["Invalid or private GitHub URL"]),
-                    aiExplanation: "Could not access repository metadata."
-                });
-                continue;
-            }
-
+        if (!repoData) {
+            // Already set to 'needs_review', just add the evaluation note
+            await db.insert(evaluations).values({
+                candidateId: candidate.id,
+                signals: JSON.stringify(["Invalid or private GitHub URL"]),
+                aiExplanation: "Could not access repository metadata."
+            });
+            // We are done with this one
+        } else {
             // B. AI Analysis
             const analysis = await analyzeCandidate(candidate.name, repoData, job.description);
 
-            // C. Update Candidate Status
+            // C. Update Candidate Status (Final)
             await db.update(candidates)
-                .set({ screeningStatus: analysis.screeningStatus as any }) // Type cast for enum
+                .set({ screeningStatus: analysis.screeningStatus as any })
                 .where(eq(candidates.id, candidate.id));
 
             // D. Save Evaluation
@@ -89,11 +89,9 @@ export async function processTriageQueue(jobId: number) {
                 signals: analysis.signals,
                 aiExplanation: analysis.aiExplanation
             });
-
-            processedCount++;
         }
 
-        // Check remaining
+        // Check remaining (for UI loop)
         const remainingResult = await db.select({ value: count() })
             .from(candidates)
             .where(
@@ -106,7 +104,7 @@ export async function processTriageQueue(jobId: number) {
 
         // revalidateTag('triage-data');
         revalidatePath('/dashboard/triage');
-        return { success: true, count: processedCount, remaining };
+        return { success: true, count: 1, remaining };
 
     } catch (error) {
         console.error("Triage Processing Failed:", error);
