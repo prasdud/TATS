@@ -3,11 +3,12 @@
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { PasswordValidation } from "@/components/auth/PasswordValidation";
 import Link from "next/link";
-import { useState } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState, useActionState } from "react";
+import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { signup } from "@/app/actions/auth";
 
 export default function Signup() {
-    const [isLoading, setIsLoading] = useState(false);
+    const [state, formAction, isPending] = useActionState(signup, undefined);
     const [showPassword, setShowPassword] = useState(false);
     const [isPasswordValid, setIsPasswordValid] = useState(false);
 
@@ -17,19 +18,11 @@ export default function Signup() {
         password: ""
     });
 
-    const [errors, setErrors] = useState({
-        name: "",
-        email: ""
-    });
+    const [emailError, setEmailError] = useState("");
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        if (val.length <= 20) {
-            setFormData({ ...formData, name: val });
-            if (errors.name) setErrors({ ...errors, name: "" });
-        } else {
-            // Optional: Show error if they try to type more, or just limit it
-            setErrors({ ...errors, name: "Name cannot exceed 20 characters" });
+        if (e.target.value.length <= 20) {
+            setFormData({ ...formData, name: e.target.value });
         }
     };
 
@@ -38,47 +31,15 @@ export default function Signup() {
         return emailRegex.test(email);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // Basic validation before submit
-        let hasError = false;
-        const newErrors = { name: "", email: "" };
-
-        if (!formData.name.trim()) {
-            newErrors.name = "Name is required";
-            hasError = true;
-        }
-
-        if (!validateEmail(formData.email)) {
-            newErrors.email = "Please enter a valid email address";
-            hasError = true;
-        }
-
-        if (!isPasswordValid) {
-            // Should be blocked by UI but just in case
-            hasError = true;
-        }
-
-        setErrors(newErrors);
-
-        if (hasError) return;
-
-        setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            console.log("Signup with:", formData);
-            // Navigate or show success
-        }, 1500);
-    };
+    // Client-side prevent submit if invalid
+    const isFormValid = formData.name && !emailError && isPasswordValid && validateEmail(formData.email);
 
     return (
         <AuthLayout
             title="Create an account"
             subtitle="Start your improved hiring with TATS"
         >
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form action={formAction} className="space-y-5">
                 {/* Name Field */}
                 <div className="space-y-1.5">
                     <label className="text-label-medium text-md-on-surface font-medium ml-1">
@@ -86,24 +47,18 @@ export default function Signup() {
                     </label>
                     <div className="relative">
                         <input
+                            name="name"
                             type="text"
                             value={formData.name}
                             onChange={handleNameChange}
                             maxLength={20}
-                            className={`
-                                w-full h-14 px-4 bg-md-surface-container-low rounded-t-lg border-b-2 
-                                focus:outline-none focus:border-md-primary transition-colors text-md-on-surface
-                                ${errors.name ? 'border-red-500 bg-red-50/50' : 'border-md-outline/40'}
-                            `}
+                            className="w-full h-14 px-4 bg-md-surface-container-low rounded-t-lg border-b-2 border-md-outline/40 focus:outline-none focus:border-md-primary transition-colors text-md-on-surface"
                             placeholder="John Doe"
                         />
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-md-on-surface-variant/50">
                             {formData.name.length}/20
                         </div>
                     </div>
-                    {errors.name && (
-                        <p className="text-xs text-red-500 ml-1">{errors.name}</p>
-                    )}
                 </div>
 
                 {/* Email Field */}
@@ -112,27 +67,27 @@ export default function Signup() {
                         Email Address
                     </label>
                     <input
+                        name="email"
                         type="email"
                         value={formData.email}
                         onChange={(e) => {
                             setFormData({ ...formData, email: e.target.value });
-                            // Clear error on change to avoid annoyance, validation happens on blur or submit
-                            if (errors.email) setErrors({ ...errors, email: "" });
+                            if (emailError) setEmailError("");
                         }}
                         onBlur={() => {
                             if (formData.email && !validateEmail(formData.email)) {
-                                setErrors({ ...errors, email: "Please enter a valid email address (e.g., user@domain.com)" });
+                                setEmailError("Please enter a valid email address");
                             }
                         }}
                         className={`
                             w-full h-14 px-4 bg-md-surface-container-low rounded-t-lg border-b-2 
                             focus:outline-none focus:border-md-primary transition-colors text-md-on-surface
-                            ${errors.email ? 'border-red-500 bg-red-50/50' : 'border-md-outline/40'}
+                            ${emailError ? 'border-red-500 bg-red-50/50' : 'border-md-outline/40'}
                         `}
                         placeholder="john@example.com"
                     />
-                    {errors.email && (
-                        <p className="text-xs text-red-500 ml-1 animate-in slide-in-from-top-1">{errors.email}</p>
+                    {emailError && (
+                        <p className="text-xs text-red-500 ml-1 animate-in slide-in-from-top-1">{emailError}</p>
                     )}
                 </div>
 
@@ -143,6 +98,7 @@ export default function Signup() {
                     </label>
                     <div className="relative">
                         <input
+                            name="password"
                             type={showPassword ? "text" : "password"}
                             value={formData.password}
                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -164,13 +120,20 @@ export default function Signup() {
                     />
                 </div>
 
+                {state && (
+                    <div className="flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-sm">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <p>{state}</p>
+                    </div>
+                )}
+
                 <div className="pt-4">
                     <button
                         type="submit"
-                        disabled={isLoading || !isPasswordValid || !formData.name || !formData.email}
+                        disabled={isPending || !isFormValid}
                         className="w-full h-12 rounded-full bg-md-primary text-md-on-primary font-bold text-label-large hover:bg-md-primary/90 active:scale-95 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                        {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                        {isPending && <Loader2 className="w-5 h-5 animate-spin" />}
                         Create Account
                     </button>
                 </div>
