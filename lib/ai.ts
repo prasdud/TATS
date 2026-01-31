@@ -46,7 +46,7 @@ Evaluation Criteria:
 Output Schema (JSON):
 {
     "screeningStatus": "looks_fine" | "needs_review" | "low_effort",
-    "signals": ["List of 3-5 short, bullet-point reasons for the decision"],
+    "signals": ["List of 3 short, bullet-point reasons for the decision"],
     "aiExplanation": "A 1-2 sentence human-readable summary of the evaluation."
 }
 `;
