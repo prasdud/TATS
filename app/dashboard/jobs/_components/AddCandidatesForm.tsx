@@ -1,10 +1,12 @@
+'use client';
+
 import { useState, useCallback } from 'react';
 import { Loader2, UploadCloud, FileText, Check, AlertCircle } from 'lucide-react';
 import { addCandidates } from '@/app/actions/jobs';
+import { processTriageQueue } from '@/app/actions/process-triage';
 import Papa from 'papaparse';
 import type { Job } from '@/lib/db/schema';
 import { useRouter } from 'next/navigation';
-import { processTriageQueue } from '@/app/actions/process-triage';
 
 interface AddCandidatesFormProps {
     job: Job;
@@ -116,35 +118,30 @@ export function AddCandidatesForm({ job, onComplete }: AddCandidatesFormProps) {
             return;
         }
 
-        import { processTriageQueue } from '@/app/actions/process-triage';
+        try {
+            // 1. Save Candidates to DB
+            const result = await addCandidates(job.id, candidatesToUpload);
 
-        // ... inside component ...
+            if (result.success) {
+                // 2. Start AI Triage Process
+                setStatus("parsing"); // Reusing parsing/uploading state for visual feedback
 
-        const handleSubmit = async (e: React.FormEvent) => {
-            e.preventDefault();
-            setIsLoading(true);
-            setStatus("uploading");
-            setError("");
+                // We call the server action to process the queue
+                // This runs sequentially on the server.
+                await processTriageQueue(job.id);
 
-            let candidatesToUpload: CandidateInput[] = [];
-
-            // 1. Add manual entry if filled
-            if (manualEntry.name && manualEntry.email) {
-                candidatesToUpload.push(manualEntry);
+                setStatus("success");
+                setTimeout(onComplete, 1000);
+            } else {
+                setError(result.error || "Failed to upload candidates.");
+                setStatus("error");
             }
-
-            // 2. Add CSV entries if file exists
-            if (csvFile) {
-                // ... existing CSV parsing logic ...
-                // (Wait, I need to keep the CSV logic here? I should probably just edit the function body)
-                // To avoid re-writing 100 lines, I will just show the modified `try/catch` block
-            }
-
-            // ... (CSV logic omitted for replacement conciseness, assuming it stays same) ...
-            // Wait, replace_file_content needs exact match. 
-            // I will target the `try { const result = await addCandidates... }` block.
-
-        };
+        } catch (err) {
+            setError("An unexpected error occurred.");
+            setStatus("error");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -229,7 +226,7 @@ export function AddCandidatesForm({ job, onComplete }: AddCandidatesFormProps) {
                         className="h-12 px-8 rounded-full bg-md-primary text-md-on-primary font-bold hover:bg-md-primary/90 disabled:opacity-50 transition-all flex items-center gap-2"
                     >
                         {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-                        {status === 'success' ? 'Saved' : 'Save & Start Triage'}
+                        {status === 'success' ? 'Saved & Triaging' : 'Save & Start Triage'}
                     </button>
                 </div>
             </form>
