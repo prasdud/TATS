@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { processTriageQueue } from '@/app/actions/process-triage';
@@ -15,14 +15,22 @@ export function TriageProcessor({ jobId, initialPendingCount }: TriageProcessorP
     const [isProcessing, setIsProcessing] = useState(false);
     const [processedCount, setProcessedCount] = useState(0);
 
+    const hasScheduledRefresh = useRef(false);
+
     useEffect(() => {
         // Initial refresh delay to catch up with redirects
+        // Use a ref to prevent double-scheduling in Strict Mode
+        if (hasScheduledRefresh.current) return;
+        hasScheduledRefresh.current = true;
+
+        console.log("Scheduling initial refresh for 7 seconds...");
         const timer = setTimeout(() => {
+            console.log("Executing initial refresh!");
             router.refresh();
         }, 7000);
 
         return () => clearTimeout(timer);
-    }, []);
+    }, [router]);
 
     useEffect(() => {
         // Only start if we have pending items and aren't already running
