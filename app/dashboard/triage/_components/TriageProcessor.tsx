@@ -14,23 +14,30 @@ export function TriageProcessor({ jobId, initialPendingCount }: TriageProcessorP
     const router = useRouter();
     const [isProcessing, setIsProcessing] = useState(false);
     const [processedCount, setProcessedCount] = useState(0);
-
-    const hasScheduledRefresh = useRef(false);
+    const hasRefreshedRef = useRef(false);
 
     useEffect(() => {
-        // Initial refresh delay to catch up with redirects
-        // Use a ref to prevent double-scheduling in Strict Mode
-        if (hasScheduledRefresh.current) return;
-        hasScheduledRefresh.current = true;
+        // FORCE HARD REFRESH logic
+        // This guarantees that ANY time this page is opened (and it's been more than 5 seconds since last hard refresh),
+        // we trigger a full browser reload to fetch fresh server data.
 
-        console.log("Scheduling initial refresh for 7 seconds...");
-        const timer = setTimeout(() => {
-            console.log("Executing initial refresh!");
-            router.refresh();
-        }, 7000);
+        const storageKey = `triage_hard_refresh_${jobId}`;
+        const lastRefresh = sessionStorage.getItem(storageKey);
+        const now = Date.now();
 
-        return () => clearTimeout(timer);
-    }, [router]);
+        if (hasRefreshedRef.current) return;
+
+        // If never refreshed, or refreshed more than 5 seconds ago
+        // (The 5s buffer prevents infinite reload loops)
+        if (!lastRefresh || (now - parseInt(lastRefresh) > 5000)) {
+            console.log("FORCE REFRESH: Triggering window.location.reload()");
+            sessionStorage.setItem(storageKey, now.toString());
+            hasRefreshedRef.current = true;
+            window.location.reload();
+        } else {
+            console.log("FORCE REFRESH: Skipped (recently refreshed)");
+        }
+    }, [jobId]);
 
     useEffect(() => {
         // Only start if we have pending items and aren't already running

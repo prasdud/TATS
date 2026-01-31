@@ -2,13 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import {
     Briefcase,
     CheckCircle2,
     Users,
     Settings,
     LogOut,
-    LayoutDashboard
+    LayoutDashboard,
+    Menu,
+    X
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { Footer } from '@/components/layout/Footer';
@@ -22,16 +25,55 @@ const sidebarItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    // Close sidebar on route change (mobile)
+    useEffect(() => {
+        setIsSidebarOpen(false);
+    }, [pathname]);
 
     return (
         <div className="min-h-screen bg-md-surface flex text-md-on-surface font-roboto">
+            {/* Mobile Header with Hamburger */}
+            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-md-surface-container-low border-b border-md-outline/10 px-4 flex items-center justify-between z-30">
+                <span className="text-xl font-bold text-md-primary font-display">TATS</span>
+                <button
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="p-2 text-md-on-surface-variant hover:bg-md-surface-container-high rounded-full"
+                >
+                    {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
+            </div>
+
+            {/* Overlay for mobile */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-30 md:hidden animate-in fade-in"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <aside className="w-64 bg-md-surface-container-low border-r border-md-outline/10 flex flex-col fixed h-full z-20 transition-all duration-300">
-                <div className="h-16 flex items-center px-6 border-b border-md-outline/10">
-                    <span className="text-xl font-bold text-md-primary font-display">TATS</span>
+            <aside
+                className={`
+                    fixed inset-y-0 left-0 z-40 w-64 bg-md-surface-container-low border-r border-md-outline/10 flex flex-col transition-transform duration-300 ease-in-out
+                    ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                    md:translate-x-0
+                `}
+            >
+                <div className="h-16 flex items-center px-6 border-b border-md-outline/10 text-xl font-bold text-md-primary font-display">
+                    <span className="md:block hidden">TATS</span> {/* Hide logo on mobile sidebar header since it's in top bar */}
+                    <span className="md:hidden block">Menu</span>
+                    {/* Close button inside sidebar for mobile ease */}
+                    <button
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="ml-auto md:hidden p-1 text-md-on-surface-variant"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-1">
+                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                     {sidebarItems.map((item) => {
                         const isActive = pathname === item.href;
                         const Icon = item.icon;
@@ -73,9 +115,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </aside>
 
             {/* Main Content */}
-            {/* Main Content */}
-            <main className="flex-1 ml-64 flex flex-col min-h-screen">
-                <div className="flex-1 p-8">
+            <main className="flex-1 flex flex-col min-h-screen transition-all duration-300 md:ml-64">
+                <div className="flex-1 p-4 md:p-8 pt-20 md:pt-8"> {/* pt-20 to clear mobile header */}
                     <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {children}
                     </div>
