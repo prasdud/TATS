@@ -1,4 +1,6 @@
 import { getTriageData, getTriageJobs } from '@/app/actions/triage';
+
+export const dynamic = 'force-dynamic';
 import { CheckCircle2, AlertCircle, XCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { JobSelector } from './_components/JobSelector';

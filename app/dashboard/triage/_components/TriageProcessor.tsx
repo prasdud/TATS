@@ -16,6 +16,15 @@ export function TriageProcessor({ jobId, initialPendingCount }: TriageProcessorP
     const [processedCount, setProcessedCount] = useState(0);
 
     useEffect(() => {
+        // Initial refresh delay to catch up with redirects
+        const timer = setTimeout(() => {
+            router.refresh();
+        }, 7000);
+
+        return () => clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
         // Only start if we have pending items and aren't already running
         if (initialPendingCount > 0 && !isProcessing) {
             startProcessingLoop();
