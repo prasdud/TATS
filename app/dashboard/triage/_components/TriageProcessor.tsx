@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { processTriageQueue } from '@/app/actions/process-triage';
 
 interface TriageProcessorProps {
@@ -14,21 +14,17 @@ export function TriageProcessor({ jobId, initialPendingCount }: TriageProcessorP
     const router = useRouter();
     const [isProcessing, setIsProcessing] = useState(false);
     const [processedCount, setProcessedCount] = useState(0);
+    const [showRefreshMessage, setShowRefreshMessage] = useState(false);
     const hasRefreshedRef = useRef(false);
 
+    // 1. HARD REFRESH LOGIC (Keep existing logic)
     useEffect(() => {
-        // FORCE HARD REFRESH logic
-        // This guarantees that ANY time this page is opened (and it's been more than 5 seconds since last hard refresh),
-        // we trigger a full browser reload to fetch fresh server data.
-
         const storageKey = `triage_hard_refresh_${jobId}`;
         const lastRefresh = sessionStorage.getItem(storageKey);
         const now = Date.now();
 
         if (hasRefreshedRef.current) return;
 
-        // If never refreshed, or refreshed more than 5 seconds ago
-        // (The 5s buffer prevents infinite reload loops)
         if (!lastRefresh || (now - parseInt(lastRefresh) > 5000)) {
             console.log("FORCE REFRESH: Triggering window.location.reload()");
             sessionStorage.setItem(storageKey, now.toString());
@@ -38,6 +34,17 @@ export function TriageProcessor({ jobId, initialPendingCount }: TriageProcessorP
             console.log("FORCE REFRESH: Skipped (recently refreshed)");
         }
     }, [jobId]);
+
+    // 2. TOGGLE MESSAGE LOGIC (New)
+    useEffect(() => {
+        if (!isProcessing && initialPendingCount === 0) return;
+
+        const interval = setInterval(() => {
+            setShowRefreshMessage(prev => !prev);
+        }, 10000); // Toggle every 10 seconds
+
+        return () => clearInterval(interval);
+    }, [isProcessing, initialPendingCount]);
 
     useEffect(() => {
         // Only start if we have pending items and aren't already running
@@ -52,26 +59,23 @@ export function TriageProcessor({ jobId, initialPendingCount }: TriageProcessorP
         let keepProcessing = true;
         while (keepProcessing) {
             try {
-                // 1. Process a batch
+                // Process a batch
                 const result = await processTriageQueue(jobId);
 
                 if (result.error) {
                     console.error("Triage Error:", result.error);
-                    keepProcessing = false; // Stop on error
+                    keepProcessing = false;
                 } else {
-                    // 2. Update processed count for UI feedback
                     if (result.count) {
                         setProcessedCount(prev => prev + result.count);
                     }
 
-                    // 3. Refresh the Server Component to show new cards
+                    // Refresh Server Component
                     router.refresh();
 
-                    // 4. Decided whether to continue
                     if (!result.remaining || result.remaining === 0) {
                         keepProcessing = false;
                     } else {
-                        // Small delay to prevent UI jitter
                         await new Promise(r => setTimeout(r, 500));
                     }
                 }
@@ -87,18 +91,30 @@ export function TriageProcessor({ jobId, initialPendingCount }: TriageProcessorP
     if (!isProcessing && initialPendingCount === 0) return null;
 
     return (
-        <div className="fixed bottom-6 right-6 bg-md-surface-container-high border border-md-outline/10 shadow-lg rounded-xl p-4 flex items-center gap-4 animate-in slide-in-from-bottom-4 z-50">
-            <div className="relative">
-                <Loader2 className="w-8 h-8 text-md-primary animate-spin" />
-                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-md-primary">
-                    {initialPendingCount}
+        <div className="fixed bottom-8 right-8 z-50 animate-in slide-in-from-bottom-6 fade-in duration-500">
+            <div className="bg-md-primary-container text-md-on-primary-container shadow-xl rounded-full px-6 py-4 flex items-center gap-4 border border-md-primary/10 transition-all hover:scale-105 cursor-pointer">
+                <div className="relative flex items-center justify-center">
+                    {showRefreshMessage ? (
+                        <RefreshCw className="w-8 h-8 animate-spin duration-[3000ms]" />
+                    ) : (
+                        <Loader2 className="w-8 h-8 animate-spin" />
+                    )}
+
+                    {!showRefreshMessage && (
+                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold">
+                            {initialPendingCount}
+                        </div>
+                    )}
                 </div>
-            </div>
-            <div>
-                <p className="font-bold text-md-on-surface text-sm">AI is Triaging...</p>
-                <p className="text-xs text-md-on-surface-variant">
-                    {initialPendingCount} remaining
-                </p>
+
+                <div className="flex flex-col">
+                    <p className="font-bold text-lg leading-tight">
+                        {showRefreshMessage ? "Changes Detected" : "AI is Triaging..."}
+                    </p>
+                    <p className="text-sm opacity-80 font-medium">
+                        {showRefreshMessage ? "Please refresh manually if needed" : `${initialPendingCount} candidates remaining`}
+                    </p>
+                </div>
             </div>
         </div>
     );

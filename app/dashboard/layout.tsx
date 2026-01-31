@@ -11,7 +11,8 @@ import {
     LogOut,
     LayoutDashboard,
     Menu,
-    X
+    X,
+    BookOpen
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { Footer } from '@/components/layout/Footer';
@@ -21,6 +22,7 @@ const sidebarItems = [
     { label: "Jobs", href: "/dashboard/jobs", icon: Briefcase },
     { label: "Triage", href: "/dashboard/triage", icon: CheckCircle2 },
     { label: "Candidates", href: "/dashboard/candidates", icon: Users },
+    { label: "How to Use", href: "/dashboard/guide", icon: BookOpen },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

@@ -1,9 +1,9 @@
 'use server';
 
-import { signIn } from '@/auth';
+import { signIn, auth } from '@/auth';
 import { AuthError } from 'next-auth';
 import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
+import { users, jobs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -66,5 +66,27 @@ export async function authenticate(
             }
         }
         throw error;
+    }
+}
+
+export async function deleteAccount() {
+    const session = await auth();
+    if (!session?.user?.id) return { error: "Unauthorized" };
+    const userId = parseInt(session.user.id);
+
+    try {
+        // 1. Delete all jobs owned by user
+        // Note: Drizzle schema has `onDelete: 'cascade'` for candidates/evaluations linked to jobs,
+        // so deleting jobs *should* clean up everything else.
+        await db.delete(jobs).where(eq(jobs.createdBy, userId));
+
+        // 2. Delete the user
+        await db.delete(users).where(eq(users.id, userId));
+
+        // 3. Sign out (handled on client after success, or we can throw error to stop execution but here we return success)
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete account:", error);
+        return { error: "Failed to delete account. Please try again." };
     }
 }
