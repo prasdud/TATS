@@ -6,7 +6,7 @@ import { jobs, candidates, evaluations } from '@/lib/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { fetchRepoMetadata } from '@/lib/github';
 import { analyzeCandidate } from '@/lib/ai';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function processTriageQueue(jobId: number) {
     const session = await auth();
@@ -76,6 +76,7 @@ export async function processTriageQueue(jobId: number) {
             processedCount++;
         }
 
+        revalidateTag('triage-data');
         revalidatePath('/dashboard/triage');
         return { success: true, count: processedCount };
 
