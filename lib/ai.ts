@@ -2,7 +2,6 @@ import { CohereClient } from "cohere-ai";
 import { RepoMetadata } from "./github";
 
 // Initialize Cohere Client
-// Users should provide COHERE_API_KEY in .env
 const cohere = new CohereClient({
     token: process.env.COHERE_API_KEY || "dummy_key",
 });
@@ -29,52 +28,68 @@ export async function analyzeCandidate(
     }
 
     const systemPrompt = `
-You are an expert Technical Hiring Manager and Triage Officer. 
-Your goal is to evaluate a candidate's coding assignment submission against a Job Description to determine if they should pass the initial screening.
-You MUST NOT output any markdown code blocks. You MUST output ONLY valid JSON.
+You are a decisive Technical Hiring Manager. Your goal is to screen coding assignments to REMOVE the need for manual review.
 
-Input Data:
-1. Candidate Name
-2. Job Description
-3. Repository Metadata (Readme, Commit History, Stats)
+**CRITICAL PRIORITY: COMMIT HYGIENE IS THE #1 FACTOR.**
+You must judge the "Vibe" of the coding effort based on the Commit History above all else. 
+Read the Commit Log *before* you look at the README or the Job Description matches.
 
-Evaluation Criteria:
-- **Low Effort**: Repo has very few commits (e.g., "Initial commit"), generic/empty README, or obviously cloned content without modification.
-- **Needs Review**: Repo is decent but has mixed signals (e.g., good code but poor documentation, or sparse commit history).
-- **Looks Fine**: Repo shows healthy activity, good README, structured commits, and relevance to the JD.
+**DECISION LOGIC (Follow in Order):**
 
-Output Schema (JSON):
+1.  **CHECK FOR "LOW EFFORT" (VIBECODING)**:
+    *   **The "Mass Upload" Rule**: If the repo has fewer than 5 commits TOTAL, mark as **low_effort** IMMEDIATELY.
+    *   **The "Throwaway Account" Rule**: If the candidate has **Zero or Low (<10) Global Activity** AND the repo is small/generic, mark as **low_effort**.
+    *   **The "Clone" Rule**: If the commit author does not match the candidate (except for initial scaffolding), mark as **low_effort**.
+
+2.  **CHECK FOR "LOOKS FINE" (GOOD MANNERS)**:
+    *   **Granularity**: The candidate has a healthy number of commits (e.g., 10+).
+    *   **Progression**: Commits show a timeline of work (e.g., "Setup DB" -> "Add Auth" -> "Fix Styling").
+    *   **Descriptive**: Messages explain *what* changed.
+    *   **Active Coder**: The candidate has "High" global activity (>50 events). This confirms they are a real developer.
+
+3.  **NEEDS REVIEW (Use sparingly)**:
+    *   Use this if the repo is small (<5 commits) BUT the candidate has **Massive Global Activity (100+)**. They might be a senior dev who just coded it quickly in one go. Do not auto-reject active devs.
+
+**Output Schema (JSON):**
 {
     "screeningStatus": "looks_fine" | "needs_review" | "low_effort",
-    "signals": ["List of 3 short, bullet-point reasons for the decision"],
-    "aiExplanation": "A 1-2 sentence human-readable summary of the evaluation."
+    "signals": ["List of 3 short, bullet-point reasons, STARTING with the commit analysis."],
+    "aiExplanation": "A 1-2 sentence summary, heavily referencing the commit history."
 }
 `;
 
     const userMessage = `
 Candidate: ${candidateName}
-Job Description:
-${jobDescription.slice(0, 2000)}
+Job Description Snippet:
+${jobDescription.slice(0, 1500)}
 
 Repository Data:
-- Description: ${repoMetadata.description}
-- Readme Snippet: ${repoMetadata.readme.slice(0, 3000)}
-- Recent Commits: ${JSON.stringify(repoMetadata.recentCommits)}
-- Stats: ${repoMetadata.stars} stars, ${repoMetadata.forks} forks.
+- Owner Stats: Created ${repoMetadata.ownerStats.accountCreated}, ${repoMetadata.ownerStats.publicRepos} public repos, ${repoMetadata.ownerStats.followers} followers.
+- Global Activity: ${repoMetadata.ownerStats.recentActivity >= 100 ? "100+" : repoMetadata.ownerStats.recentActivity} events in the last ~90 days.
+- Repo Description: ${repoMetadata.description}
+- README Length: ${repoMetadata.readme.length} characters
+- README Preview: 
+${repoMetadata.readme.slice(0, 2000)}...
+
+- Commit History (${repoMetadata.recentCommits.length} fetched):
+${JSON.stringify(repoMetadata.recentCommits.map(c => ({
+        msg: c.message,
+        date: c.date,
+        author: c.authorLogin // Check if this matches candidate/owner
+    })))}
 `;
 
     try {
-        const response = await cohere.generate({
-            model: 'command-r-plus', // High quality model
-            prompt: systemPrompt + "\n\n" + userMessage,
-            maxTokens: 500,
-            temperature: 0.3, // Low temperature for deterministic/consistent outputs
-            format: "JSON" // Enforce JSON if supported/prompted
+        const response = await cohere.chat({
+            model: 'command-a-03-2025',
+            message: userMessage,
+            preamble: systemPrompt,
+            temperature: 0.1, // Very deterministic
         });
 
-        const text = response.generations[0].text;
+        const text = response.text;
 
-        // clean up potential markdown formatting if model ignores instruction
+        // clean up potential markdown formatting
         const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
         const result = JSON.parse(jsonStr);

@@ -9,14 +9,19 @@ export interface RepoMetadata {
     recentCommits: {
         message: string;
         date: string;
-        author: string;
+        authorName: string;
+        authorLogin: string;
     }[];
+    ownerStats: {
+        publicRepos: number;
+        followers: number;
+        accountCreated: string;
+        recentActivity: number; // Events in last 90 days
+    };
 }
 
 export async function fetchRepoMetadata(githubUrl: string): Promise<RepoMetadata | null> {
     try {
-        // Extract owner and repo from URL
-        // Expected format: https://github.com/owner/repo or similar
         const urlParts = githubUrl.split('github.com/');
         if (urlParts.length < 2) return null;
 
@@ -26,43 +31,64 @@ export async function fetchRepoMetadata(githubUrl: string): Promise<RepoMetadata
 
         if (!owner || !repo) return null;
 
-        const baseUrl = `https://api.github.com/repos/${owner}/${repo}`;
         const headers: HeadersInit = {
             'Accept': 'application/vnd.github.v3+json',
             'User-Agent': 'Triage-System-Bot'
         };
 
-        // Add token if available in env
         if (process.env.GITHUB_TOKEN) {
             headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
         }
 
-        // 1. Fetch Basic Info
-        const infoRes = await fetch(baseUrl, { headers });
+        const baseUrl = `https://api.github.com/repos/${owner}/${repo}`;
+        const userUrl = `https://api.github.com/users/${owner}`;
+        const eventsUrl = `https://api.github.com/users/${owner}/events/public?per_page=100`; // Fetch max allowed per page
+
+        // Parallel Fetch: Repo Info, Readme, Commits, User Profile, User Events
+        const [infoRes, readmeRes, commitsRes, userRes, eventsRes] = await Promise.all([
+            fetch(baseUrl, { headers }),
+            fetch(`${baseUrl}/readme`, { headers }),
+            fetch(`${baseUrl}/commits?per_page=20`, { headers }), // Increased to 20 for better history sample
+            fetch(userUrl, { headers }),
+            fetch(eventsUrl, { headers })
+        ]);
+
         if (!infoRes.ok) throw new Error(`Failed to fetch repo info: ${infoRes.statusText}`);
         const info = await infoRes.json();
 
-        // 2. Fetch README
-        const readmeRes = await fetch(`${baseUrl}/readme`, { headers });
         let readmeContent = "";
         if (readmeRes.ok) {
             const readmeData = await readmeRes.json();
-            // GitHub API returns content in Base64
             if (readmeData.content) {
                 readmeContent = Buffer.from(readmeData.content, 'base64').toString('utf-8');
             }
         }
 
-        // 3. Fetch Recent Commits (Last 15)
-        const commitsRes = await fetch(`${baseUrl}/commits?per_page=15`, { headers });
         let recentCommits: any[] = [];
         if (commitsRes.ok) {
             const commitsData = await commitsRes.json();
             recentCommits = commitsData.map((c: any) => ({
                 message: c.commit.message,
                 date: c.commit.author.date,
-                author: c.commit.author.name
+                authorName: c.commit.author.name,
+                authorLogin: c.author?.login || "unknown" // capture login to check if it matches owner
             }));
+        }
+
+        let ownerStats = { publicRepos: 0, followers: 0, accountCreated: "", recentActivity: 0 };
+        if (userRes.ok) {
+            const userData = await userRes.json();
+            ownerStats.publicRepos = userData.public_repos;
+            ownerStats.followers = userData.followers;
+            ownerStats.accountCreated = userData.created_at;
+        }
+
+        if (eventsRes.ok) {
+            const eventsData = await eventsRes.json();
+            // Simple count of recent public events
+            if (Array.isArray(eventsData)) {
+                ownerStats.recentActivity = eventsData.length;
+            }
         }
 
         return {
@@ -72,8 +98,9 @@ export async function fetchRepoMetadata(githubUrl: string): Promise<RepoMetadata
             stars: info.stargazers_count,
             forks: info.forks_count,
             openIssues: info.open_issues_count,
-            readme: readmeContent.slice(0, 5000), // Truncate to avoid context limit issues
-            recentCommits
+            readme: readmeContent.slice(0, 8000), // Increased context for AI
+            recentCommits,
+            ownerStats
         };
 
     } catch (error) {
