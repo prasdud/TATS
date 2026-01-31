@@ -4,6 +4,7 @@ import { addCandidates } from '@/app/actions/jobs';
 import Papa from 'papaparse';
 import type { Job } from '@/lib/db/schema';
 import { useRouter } from 'next/navigation';
+import { processTriageQueue } from '@/app/actions/process-triage';
 
 interface AddCandidatesFormProps {
     job: Job;
@@ -115,21 +116,35 @@ export function AddCandidatesForm({ job, onComplete }: AddCandidatesFormProps) {
             return;
         }
 
-        try {
-            const result = await addCandidates(job.id, candidatesToUpload);
-            if (result.success) {
-                setStatus("success");
-                setTimeout(onComplete, 1500); // Wait a bit then move on
-            } else {
-                setError(result.error || "Failed to upload candidates.");
-                setStatus("error");
+        import { processTriageQueue } from '@/app/actions/process-triage';
+
+        // ... inside component ...
+
+        const handleSubmit = async (e: React.FormEvent) => {
+            e.preventDefault();
+            setIsLoading(true);
+            setStatus("uploading");
+            setError("");
+
+            let candidatesToUpload: CandidateInput[] = [];
+
+            // 1. Add manual entry if filled
+            if (manualEntry.name && manualEntry.email) {
+                candidatesToUpload.push(manualEntry);
             }
-        } catch (err) {
-            setError("An unexpected error occurred.");
-            setStatus("error");
-        } finally {
-            setIsLoading(false);
-        }
+
+            // 2. Add CSV entries if file exists
+            if (csvFile) {
+                // ... existing CSV parsing logic ...
+                // (Wait, I need to keep the CSV logic here? I should probably just edit the function body)
+                // To avoid re-writing 100 lines, I will just show the modified `try/catch` block
+            }
+
+            // ... (CSV logic omitted for replacement conciseness, assuming it stays same) ...
+            // Wait, replace_file_content needs exact match. 
+            // I will target the `try { const result = await addCandidates... }` block.
+
+        };
     };
 
     return (
