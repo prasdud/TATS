@@ -42,10 +42,11 @@ export default async function TriagePage({ searchParams }: PageProps) {
     const totalCandidates = candidates.length;
 
     // Group candidates by status
-    const looksFine = candidates.filter(c => c.screeningStatus === 'looks_fine');
-    const needsReview = candidates.filter(c => c.screeningStatus === 'needs_review');
-    const lowEffort = candidates.filter(c => c.screeningStatus === 'low_effort');
-    const pending = candidates.filter(c => !c.screeningStatus);
+    const looksFine = candidates.filter(c => c.status === 'looks_fine');
+    const needsReview = candidates.filter(c => c.status === 'needs_review');
+    const lowEffort = candidates.filter(c => c.status === 'low_effort');
+    const pending = candidates.filter(c => c.status === 'pending' || c.status === 'processing');
+    const failed = candidates.filter(c => ['github_failed', 'ai_failed', 'unknown_failed'].includes(c.status || ''));
 
     return (
         <div className="space-y-8">
@@ -66,11 +67,17 @@ export default async function TriagePage({ searchParams }: PageProps) {
                         <p className="text-display-small font-bold text-md-on-surface leading-none">{totalCandidates}</p>
                         <p className="text-sm font-medium text-md-on-surface-variant">Candidates</p>
                     </div>
+                    {failed.length > 0 && (
+                        <div className="text-right text-red-600">
+                            <p className="text-display-small font-bold leading-none">{failed.length}</p>
+                            <p className="text-sm font-medium">Failed</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Triage Results Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 {/* Looks Fine Column */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between border-b-2 border-green-500 pb-2">
@@ -105,6 +112,18 @@ export default async function TriagePage({ searchParams }: PageProps) {
                     </div>
                     {lowEffort.map(c => <CandidateCard key={c.id} candidate={c} />)}
                     {lowEffort.length === 0 && <EmptyState />}
+                </div>
+
+                {/* Failed Column */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b-2 border-red-800 pb-2">
+                        <h3 className="font-bold text-red-900 flex items-center gap-2">
+                            <XCircle className="w-5 h-5" /> Failed
+                        </h3>
+                        <span className="bg-red-200 text-red-900 text-xs font-bold px-2 py-0.5 rounded-full">{failed.length}</span>
+                    </div>
+                    {failed.map(c => <CandidateCard key={c.id} candidate={c} />)}
+                    {failed.length === 0 && <EmptyState />}
                 </div>
 
                 {/* Pending Column */}

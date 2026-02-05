@@ -16,7 +16,7 @@ export async function getAllCandidates() {
             name: candidates.name,
             email: candidates.email,
             githubUrl: candidates.githubUrl,
-            screeningStatus: candidates.screeningStatus,
+            status: candidates.status,
             finalDisposition: candidates.finalDisposition,
             createdAt: candidates.createdAt,
             jobTitle: jobs.title,
