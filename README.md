@@ -2,7 +2,7 @@
 
 https://tats-self.vercel.app
 
-# Assignment Submission Triage System
+# Techincal Assignment Triage System
 
 A full-stack Next.js 16 application that helps non-technical HR teams triage technical assignment submissions using GitHub repository hygiene signals and AI-assisted explanations.
 
