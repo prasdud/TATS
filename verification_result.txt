@@ -1,0 +1,10 @@
+created_at | timestamp without time zone | timestamp
+disposition | USER-DEFINED | disposition
+email | text | text
+github_url | text | text
+id | integer | int4
+job_id | integer | int4
+name | text | text
+resume_file | text | text
+resume_text | text | text
+status | USER-DEFINED | status

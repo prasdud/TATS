@@ -25,10 +25,15 @@ export const jobs = pgTable('jobs', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
-export const screeningStatusEnum = pgEnum('screening_status', [
+export const statusEnum = pgEnum('status', [
+  'pending',
+  'processing',
   'looks_fine',
   'needs_review',
   'low_effort',
+  'github_failed',
+  'ai_failed',
+  'unknown_failed',
 ]);
 
 export const dispositionEnum = pgEnum('disposition', [
@@ -47,7 +52,7 @@ export const candidates = pgTable('candidates', {
   resumeFile: text('resume_file'), // Base64 encoded PDF
   resumeText: text('resume_text'),
   githubUrl: text('github_url').notNull(),
-  screeningStatus: screeningStatusEnum('screening_status'),
+  status: statusEnum('status').default('pending'),
   finalDisposition: dispositionEnum('disposition'),
   createdAt: timestamp('created_at').defaultNow(),
 });

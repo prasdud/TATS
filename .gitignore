@@ -25,6 +25,7 @@ context.md
 # misc
 .DS_Store
 *.pem
+qstash.md
 
 # debug
 npm-debug.log*
