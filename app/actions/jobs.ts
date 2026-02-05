@@ -68,25 +68,18 @@ export async function addCandidates(jobId: number, newCandidates: Omit<NewCandid
         const candidatesToInsert = newCandidates.map(c => ({
             ...c,
             jobId: jobId,
-            status: "pending" as const, // Default for QStash
+            status: "pending" as const,
             finalDisposition: null,
         }));
 
         const insertedCandidates = await db.insert(candidates).values(candidatesToInsert as NewCandidate[]).returning({ id: candidates.id });
 
         // Trigger QStash for each candidate
-        // background "fire and forget" or await?
-        // Ideally await to ensure we don't lose them if server kills non-awaited promises?
-        // But QStash publish is fast.
-
-        // We can do Promise.all
         const publishPromises = insertedCandidates.map(c => publishCandidateProcessing(c.id));
-        await Promise.allSettled(publishPromises); // Don't fail the whole request if one publish fails?
-        // Actually, if publish fails, they stay "pending".
-        // User can retry later (we need a retry UI but that's out of scope for now, just best effort).
+        await Promise.allSettled(publishPromises);
 
         revalidatePath('/dashboard/jobs');
-        revalidatePath('/dashboard/triage'); // Update triage page too
+        revalidatePath('/dashboard/triage');
         return { success: true };
     } catch (error) {
         console.error("Failed to add candidates:", error);
