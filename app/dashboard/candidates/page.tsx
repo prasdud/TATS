@@ -50,7 +50,7 @@ export default async function CandidatesPage() {
                                         </span>
                                     </td>
                                     <td className="p-6">
-                                        <StatusBadge status={candidate.screeningStatus} />
+                                        <StatusBadge status={candidate.status} />
                                     </td>
                                     <td className="p-6 text-sm text-md-on-surface-variant">
                                         {candidate.createdAt ? format(new Date(candidate.createdAt), 'MMM d, yyyy') : '-'}
@@ -76,7 +76,9 @@ export default async function CandidatesPage() {
 }
 
 function StatusBadge({ status }: { status: string | null }) {
-    if (!status) return <span className="inline-flex items-center gap-1.5 text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full text-xs font-bold"><Loader2 className="w-3 h-3 animate-spin" /> Processing</span>;
+    if (!status || status === 'pending' || status === 'processing') return <span className="inline-flex items-center gap-1.5 text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full text-xs font-bold"><Loader2 className="w-3 h-3 animate-spin" /> {status === 'processing' ? 'Processing' : 'Pending'}</span>;
+
+    if (status.includes('failed')) return <span className="inline-flex items-center gap-1.5 text-red-700 bg-red-100 px-2.5 py-1 rounded-full text-xs font-bold"><XCircle className="w-3 h-3" /> Failed</span>;
 
     switch (status) {
         case 'looks_fine':

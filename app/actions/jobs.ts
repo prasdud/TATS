@@ -58,7 +58,9 @@ export async function createJob(prevState: string | undefined, formData: FormDat
 }
 
 // Bulk add candidates
-export async function addCandidates(jobId: number, newCandidates: Omit<NewCandidate, 'jobId' | 'id' | 'createdAt' | 'screeningStatus' | 'finalDisposition'>[]) {
+import { publishCandidateProcessing } from '@/lib/qstash';
+
+export async function addCandidates(jobId: number, newCandidates: Omit<NewCandidate, 'jobId' | 'id' | 'createdAt' | 'status' | 'finalDisposition'>[]) {
     const session = await auth();
     if (!session?.user?.id) return { error: "Unauthorized" };
 
@@ -66,14 +68,18 @@ export async function addCandidates(jobId: number, newCandidates: Omit<NewCandid
         const candidatesToInsert = newCandidates.map(c => ({
             ...c,
             jobId: jobId,
-            // Defaults
-            screeningStatus: null,
+            status: "pending" as const,
             finalDisposition: null,
         }));
 
-        await db.insert(candidates).values(candidatesToInsert as NewCandidate[]);
+        const insertedCandidates = await db.insert(candidates).values(candidatesToInsert as NewCandidate[]).returning({ id: candidates.id });
+
+        // Trigger QStash for each candidate
+        const publishPromises = insertedCandidates.map(c => publishCandidateProcessing(c.id));
+        await Promise.allSettled(publishPromises);
 
         revalidatePath('/dashboard/jobs');
+        revalidatePath('/dashboard/triage');
         return { success: true };
     } catch (error) {
         console.error("Failed to add candidates:", error);

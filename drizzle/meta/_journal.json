@@ -8,6 +8,13 @@
       "when": 1769798071119,
       "tag": "0000_clever_amphibian",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770294701887,
+      "tag": "0001_famous_stepford_cuckoos",
+      "breakpoints": true
     }
   ]
 }

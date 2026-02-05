@@ -1,1 +1,0 @@
-scripts/migrate.ts(13,11): error TS2339: Property 'schema' does not exist on type 'typeof import("/home/prasdud/playground/TATS/lib/db/schema")'.

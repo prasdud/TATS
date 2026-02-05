@@ -3,7 +3,6 @@
 import { useState, useCallback } from 'react';
 import { Loader2, UploadCloud, FileText, Check, AlertCircle } from 'lucide-react';
 import { addCandidates } from '@/app/actions/jobs';
-import { processTriageQueue } from '@/app/actions/process-triage';
 import Papa from 'papaparse';
 import type { Job } from '@/lib/db/schema';
 import { useRouter } from 'next/navigation';
