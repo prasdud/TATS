@@ -1,0 +1,38 @@
+
+> triage-system@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 11.2s
+  Running TypeScript ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/11) ...
+  Generating static pages using 15 workers (2/11) 
+  Generating static pages using 15 workers (5/11) 
+  Generating static pages using 15 workers (8/11) 
+✓ Generating static pages using 15 workers (11/11) in 1811.8ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/process-candidate
+├ ƒ /dashboard
+├ ƒ /dashboard/candidates
+├ ƒ /dashboard/guide
+├ ƒ /dashboard/jobs
+├ ○ /dashboard/settings
+├ ƒ /dashboard/triage
+├ ○ /login
+└ ○ /signup
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

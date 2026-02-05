@@ -21,14 +21,14 @@ export default async function DashboardPage() {
             .where(eq(jobs.createdBy, userId));
         activeJobs = jobsResult[0].value;
 
-        // 2. Pending Reviews
+        // 2. Pending Reviews (pending or processing status)
         const pendingResult = await db.select({ value: count() })
             .from(candidates)
             .innerJoin(jobs, eq(candidates.jobId, jobs.id))
             .where(
                 and(
                     eq(jobs.createdBy, userId),
-                    isNull(candidates.screeningStatus)
+                    isNull(candidates.status)
                 )
             );
         pendingReviews = pendingResult[0].value;
@@ -40,7 +40,7 @@ export default async function DashboardPage() {
             .where(
                 and(
                     eq(jobs.createdBy, userId),
-                    isNotNull(candidates.screeningStatus)
+                    isNotNull(candidates.status)
                 )
             );
         candidatesTriaged = triagedResult[0].value;
