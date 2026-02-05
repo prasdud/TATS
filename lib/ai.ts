@@ -117,11 +117,22 @@ ${JSON.stringify(repoMetadata.recentCommits.map(c => ({
             aiExplanation: result.aiExplanation || "Analysis completed."
         };
 
-    } catch (error) {
-        console.error("Cohere Analysis Failed:", error);
+    } catch (error: any) {
+        console.error("Cohere Analysis Error:", error);
+
+        // Check for Rate Limit (429) or Server Errors (5xx)
+        // Cohere SDK usually throws objects with 'statusCode' or 'status'
+        const status = error?.statusCode || error?.status || 500;
+
+        if (status === 429 || status >= 500) {
+            console.warn(`[AI] Transient error (${status}), throwing for retry.`);
+            throw error; // Trigger QStash Retry
+        }
+
+        // Permanent errors (400, 401, etc.) fallback to manual review
         return {
             screeningStatus: 'needs_review',
-            signals: JSON.stringify(["AI Analysis Failed"]),
+            signals: JSON.stringify(["AI Analysis Failed", error.message || "Unknown error"]),
             aiExplanation: "An error occurred during AI analysis. Please review manually."
         };
     }
