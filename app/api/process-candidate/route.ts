@@ -1,10 +1,49 @@
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { candidates, jobs, evaluations } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { candidates, jobs, users, evaluations } from "@/lib/db/schema";
+import { eq, inArray, and, sql } from "drizzle-orm";
 import { fetchRepoMetadata } from "@/lib/github";
 import { analyzeCandidate } from "@/lib/ai";
+import { sendCompletionEmail } from "@/app/actions/email-notification";
+
+/**
+ * Check if all candidates for a job are processed and send completion email if so.
+ */
+async function checkAndNotifyIfComplete(jobId: number) {
+    try {
+        // Count candidates still pending or processing for this job
+        const pendingResult = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(candidates)
+            .where(and(
+                eq(candidates.jobId, jobId),
+                inArray(candidates.status, ['pending', 'processing'])
+            ));
+
+        const pendingCount = Number(pendingResult[0]?.count ?? 0);
+        console.log(`[Worker] Job ${jobId}: ${pendingCount} candidates still pending/processing`);
+
+        if (pendingCount === 0) {
+            console.log(`[Worker] Job ${jobId} complete! Sending completion email...`);
+
+            // Get user email from job
+            const jobResult = await db
+                .select({ userEmail: users.email })
+                .from(jobs)
+                .innerJoin(users, eq(jobs.createdBy, users.id))
+                .where(eq(jobs.id, jobId))
+                .limit(1);
+
+            if (jobResult.length > 0 && jobResult[0].userEmail) {
+                await sendCompletionEmail(jobResult[0].userEmail);
+            }
+        }
+    } catch (error) {
+        console.error("[Worker] Failed to check completion or send email:", error);
+        // Don't fail the worker for email issues
+    }
+}
 
 /**
  * Worker endpoint called by QStash to process a single candidate.
@@ -77,6 +116,9 @@ async function handler(req: Request) {
                 aiExplanation: "Could not access repository metadata.",
             });
 
+            // Check if this was the last one
+            await checkAndNotifyIfComplete(job.id);
+
             return NextResponse.json({ success: true, result: "github_failed" });
         }
 
@@ -106,6 +148,9 @@ async function handler(req: Request) {
             aiExplanation: analysis.aiExplanation,
         });
 
+        // 9. Check if queue is empty and send email
+        await checkAndNotifyIfComplete(job.id);
+
         return NextResponse.json({ success: true });
 
     } catch (error) {
@@ -116,3 +161,4 @@ async function handler(req: Request) {
 }
 
 export const POST = verifySignatureAppRouter(handler);
+
