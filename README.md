@@ -23,6 +23,7 @@ The focus is on pre-interview technical hygiene, not technical judgment. It stan
 ### System Capabilities
 - **Automated Triage Pipeline**: Fetches real-time GitHub metadata and commits to analyze repository hygiene.
 - **AI Analysis**: Uses Cohere to generate plain-English explanations for technical signals (commit frequency, code churn, documentation).
+- **QStash Background Workers**: Used QStash to offload triage processing to QStash Queue with 2 workers. Providies serverless resillience.
 - **Concurrency Control**: Implements atomic database locking to prevent duplicate processing when multiple users or agents are active.
 - **Real-time Updates**: Zero-cache architecture with automated polling ensures the dashboard always reflects live data.
 
